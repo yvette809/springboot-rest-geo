@@ -1,6 +1,5 @@
 package com.example.springrestgeo.entity;
 
-package com.example.springrestplaces.entity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.*;
 

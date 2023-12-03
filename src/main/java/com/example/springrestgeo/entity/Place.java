@@ -1,8 +1,6 @@
 package com.example.springrestgeo.entity;
 
-package com.example.springrestplaces.entity;
-
-import com.example.springrestplaces.utils.Point2DSerializer;
+import com.example.springrestgeo.utils.Point2DSerializer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;

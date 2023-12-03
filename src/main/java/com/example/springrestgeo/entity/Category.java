@@ -1,6 +1,8 @@
 package com.example.springrestgeo.entity;
 
-import com.example.springrestplaces.validation.EmojiSymbol;
+
+import com.example.springrestgeo.validation.EmojiSymbol;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -29,7 +31,7 @@ public class Category {
     private String description;
 
     // one to many
-    @Transient
+   @JsonIgnore
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     List<Place> places;
 
