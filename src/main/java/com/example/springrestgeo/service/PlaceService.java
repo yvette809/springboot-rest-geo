@@ -111,7 +111,7 @@ public class PlaceService {
     }
 
 
-    public Place updatePlace(Integer placeId, Place place) {
+    public Place updatePlace(Integer placeId, PlaceDto place) {
         // Check if user is logged in
         if (!SecurityContextHolder.getContext().getAuthentication().isAuthenticated()) {
             throw new RuntimeException("User must be logged in to update a place");
@@ -124,12 +124,12 @@ public class PlaceService {
         if (!existingPlace.getUserId().equals(getCurrentUserId())) {
             throw new RuntimeException("Place does not belong to loggedInUser");
         }
+        Optional<Category> category = categoryRepository.findById(place.categoryId());
 
         // Update place details
-        existingPlace.setName(place.getName());
-        existingPlace.setDescription(place.getDescription());
-        existingPlace.setCategory(place.getCategory());
-
+        existingPlace.setCategory(category .orElseThrow(()-> new ResourceNotFoundException("category not found")));
+        existingPlace.setName(place.name());
+        existingPlace.setDescription(place.description());
         // Save updated place to the database
         return placeRepository.save(existingPlace);
     }

@@ -1,6 +1,7 @@
 package com.example.springrestgeo.controller;
 
 import com.example.springrestgeo.dto.PlaceDto;
+import com.example.springrestgeo.entity.Coordinates;
 import com.example.springrestgeo.entity.Place;
 import com.example.springrestgeo.service.PlaceService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,9 +15,10 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import java.nio.file.AccessDeniedException;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/places")
 public class PlaceController {
     private PlaceService placeService;
 
@@ -26,7 +28,7 @@ public class PlaceController {
         this.placeService = placeService;
     }
 
-    @GetMapping("/places")
+    @GetMapping()
     ResponseEntity<List<Place>> getAllPublicPlaces(){
         List<Place> publicPlaces = placeService.getAllPublicPlaces();
         if(publicPlaces.isEmpty()){
@@ -40,9 +42,21 @@ public class PlaceController {
     }
 
 
+    @GetMapping(path = "/search")
+    public ResponseEntity<?> getWithin(@RequestParam Optional<Double> lat,
+                                       @RequestParam Optional<Double> lon,
+                                       @RequestParam Optional<Double> dist,
+                                       @RequestBody(required = false) Optional<Coordinates[]> coordinates) {
 
+        if (dist.isPresent() && lat.isPresent() && lon.isPresent()) {
+            return ResponseEntity.ok().body(placeService.findAround(lat.get(), lon.get(), dist.get()));
+        } else if (coordinates.isPresent()) {
+            return ResponseEntity.ok().body(placeService.findWithinPolygon(coordinates.get()));
+        }
+        return null;
+    }
 
-    @GetMapping("/places/{category}")
+    @GetMapping("/{category}")
     public ResponseEntity<List<Place>> getAllPublicPlacesByCategory(@PathVariable String category) {
 
         List<Place> publicPlacesInCategory = placeService.getAllPublicPlacesInCategory(category);
@@ -55,7 +69,7 @@ public class PlaceController {
     }
 
 
-    @GetMapping("/places/user")
+    @GetMapping("/user")
     public ResponseEntity<List<Place>> getAllPlacesForUser(@AuthenticationPrincipal UserDetails userDetails){
         // get username of loggedin user
         String userId = userDetails.getUsername();
@@ -63,7 +77,7 @@ public class PlaceController {
         return  ResponseEntity.ok(places);
     }
 
-    @PostMapping("/places")
+    @PostMapping()
     public ResponseEntity<Place> createAPlace(PlaceDto place){
 
         Place newPlace = placeService.createPlace(place);
@@ -76,10 +90,10 @@ public class PlaceController {
         return ResponseEntity.created(locationURI).body(newPlace);
     }
 
-    @PutMapping("/places")
+    @PutMapping()
     public ResponseEntity<Place> updatePlace(
             @PathVariable int placeId,
-            @RequestBody Place updatedPlace
+            @RequestBody PlaceDto updatedPlace
 
     ) {
         try {
@@ -92,7 +106,7 @@ public class PlaceController {
         }
     }
 
-    @DeleteMapping("/places/{placeId}")
+    @DeleteMapping("/{placeId}")
     public ResponseEntity<String> deletePlace(@PathVariable Integer placeId) {
         placeService.deletePlace(placeId);
         String responseMessage = "Place with ID " + placeId+ " deleted successfully.";
