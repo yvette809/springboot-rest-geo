@@ -11,9 +11,12 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
@@ -28,19 +31,39 @@ public class SecurityConfig {
     @Autowired
     private DataSource dataSource;
 
-    @Bean
+   /* @Bean
     public UserDetailsManager userDetailsManager(DataSource dataSource) {
         JdbcUserDetailsManager theUserDetailsManager = new JdbcUserDetailsManager(dataSource);
         theUserDetailsManager.setUsersByUsernameQuery("select user_id, password, enabled from users where user_id=?");
         theUserDetailsManager.setAuthoritiesByUsernameQuery("select user_id, role from authorities where user_id=?");
         return theUserDetailsManager;
         //return new JdbcUserDetailsManager(dataSource);
+    }*/
+
+    @Bean
+    public UserDetailsService users() {
+        UserDetails user = User.builder()
+                .username("user")
+                .password(passwordEncoder().encode("password"))
+                .roles("USER")
+                .build();
+        UserDetails yvette = User.builder()
+                .username("yvette")
+                .password(passwordEncoder().encode("ub021299"))
+                .roles("USER")
+                .build();
+        UserDetails admin = User.builder()
+                .username("admin")
+                .password(passwordEncoder().encode("password"))
+                .roles("USER", "ADMIN")
+                .build();
+        return new InMemoryUserDetailsManager(user, admin, yvette);
     }
 
-    /*@Bean
+    @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }*/
+    }
 
 
     @Bean
@@ -59,6 +82,7 @@ public class SecurityConfig {
                                 .requestMatchers(HttpMethod.GET, "/api/categories/*").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/api/categories").hasRole("ADMIN")
                                 .requestMatchers(HttpMethod.POST, "/api/places").authenticated()
+                                .requestMatchers(HttpMethod.GET, "/api/places/").permitAll()
                                 .requestMatchers(HttpMethod.GET, "/api/places/*").permitAll()
                                 .requestMatchers(HttpMethod.PUT, "/api/places").authenticated()
                                 .requestMatchers(HttpMethod.DELETE, "/api/places/*").authenticated()

@@ -10,6 +10,7 @@ import org.geolatte.geom.G2D;
 import org.geolatte.geom.Point;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.proxy.HibernateProxy;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -22,12 +23,9 @@ public class Place {
     private int id;
     @Column(nullable = false)
     private String name;
-    //private int categoryId;
+    @Column(name = "user_id")
+    private String userId;
 
-    @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="user_id")
-    private User user;
     @NotBlank(message = "Description is required")
     @Size(max = 255, message = "Description should be at most 255 characters")
     private String description;
@@ -39,7 +37,8 @@ public class Place {
     @UpdateTimestamp
     @Column(name="date_modified")
     private LocalDateTime dateModified;
-    @JsonIgnore
+
+
     @JsonSerialize(using = Point2DSerializer.class)
     private Point<G2D> coordinate;
 
@@ -50,20 +49,8 @@ public class Place {
     // constructors
     public Place(){}
 
-    public Place(int id, String name, User user, String description, Boolean visible, LocalDateTime dateCreated, LocalDateTime dateModified, Point<G2D> coordinate, Category category) {
-        this.id = id;
-        this.name = name;
-        this.user = user;
-        this.description = description;
-        this.visible = visible;
-        this.dateCreated = dateCreated;
-        this.dateModified = dateModified;
-        this.coordinate = coordinate;
-        this.category = category;
-    }
 
     // getters and setters
-
 
     public int getId() {
         return id;
@@ -81,13 +68,20 @@ public class Place {
         this.name = name;
     }
 
-
-    public User getUser() {
-        return user;
+    public String getUserId() {
+        return userId;
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public Boolean getVisible() {
@@ -96,14 +90,6 @@ public class Place {
 
     public void setVisible(Boolean visible) {
         this.visible = visible;
-    }
-
-    public Point<G2D> getCoordinate() {
-        return coordinate;
-    }
-
-    public void setCoordinate(Point<G2D> coordinate) {
-        this.coordinate = coordinate;
     }
 
     public LocalDateTime getDateCreated() {
@@ -122,13 +108,12 @@ public class Place {
         this.dateModified = dateModified;
     }
 
-
-    public String getDescription() {
-        return description;
+    public Point<G2D> getCoordinate() {
+        return coordinate;
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void setCoordinate(Point<G2D> coordinate) {
+        this.coordinate = coordinate;
     }
 
     public Category getCategory() {
@@ -139,6 +124,7 @@ public class Place {
         this.category = category;
     }
 
+
     // toString method
 
 
@@ -147,7 +133,7 @@ public class Place {
         return "Place{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
-                ", user=" + user+
+                ", userId=" + userId+
                 ", visible=" + visible +
                 ", dateCreated=" + dateCreated +
                 ", dateModified=" + dateModified +
@@ -160,16 +146,19 @@ public class Place {
 
 
     @Override
-    public boolean equals(Object o) {
+    public final boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Place place = (Place) o;
-        return Objects.equals(coordinate, place.coordinate);
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        Place place= (Place) o;
+        return false;
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(coordinate);
+    public final int hashCode() {
+        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
     }
 
 

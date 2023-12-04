@@ -12,6 +12,7 @@ import org.geolatte.geom.G2D;
 import org.geolatte.geom.Point;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -32,8 +33,8 @@ public class Category {
 
     // one to many
    @JsonIgnore
-    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    List<Place> places;
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    List<Place> places = new ArrayList<>();
 
 
 //constructor
@@ -87,6 +88,15 @@ public class Category {
         this.places = places;
     }
 
+    public void addPlace(Place place){
+        places.add(place);
+        System.out.println("place added");
+    }
+    public void removePlace(Place place){
+        places.remove(place);
+        place.setCategory(null);
+    }
+
     // toString method
 
     @Override
@@ -99,84 +109,5 @@ public class Category {
                 '}';
     }
 
-    @Entity
-    @Table(name = "authorities")
-    public static class Authority {
 
-        @Id
-        @Column(name = "user_id", nullable = false)
-        private String userId;
-
-        @Column(name = "role", nullable = false)
-        private String authority;
-
-        @OneToOne
-        @JoinColumn(name = "user_id" ,insertable=false, updatable=false)
-        private User user;
-
-        // Constructors, getters, and setters
-
-        // Constructors
-        public Authority() {
-            // Default constructor
-        }
-
-        public Authority(String userId, String authority) {
-            this.userId = userId;
-            this.authority = authority;
-        }
-
-        // Getters and setters
-
-
-        public String getUsername() {
-            return userId;
-        }
-
-        public void setUsername(String username) {
-            this.userId = userId;
-        }
-
-        public String getAuthority() {
-            return authority;
-        }
-
-        public void setAuthority(String authority) {
-            this.authority = authority;
-        }
-
-        public User getUser() {
-            return user;
-        }
-
-        public void setUser(User user) {
-            this.user = user;
-        }
-
-        //toString
-
-        @Override
-        public String toString() {
-            return "Authority{" +
-                    ", userId='" + userId + '\'' +
-                    ", authority='" + authority + '\'' +
-                    ", user=" + user +
-                    '}';
-        }
-
-        public static class Point2DSerializer extends JsonSerializer<Point<G2D>> {
-            @Override
-            public void serialize(Point<G2D> value, JsonGenerator gen, SerializerProvider serializerProvider) throws IOException {
-                //        gen.writeStartArray();
-                //        gen.writeNumber(value.getPosition().getCoordinate(1));
-                //        gen.writeNumber(value.getPosition().getCoordinate(0));
-                //        gen.writeEndArray();
-                gen.writeStartObject();
-                gen.writeNumberField("lat", value.getPosition().getCoordinate(1));
-                gen.writeNumberField("lng", value.getPosition().getCoordinate(0));
-                gen.writeEndObject();
-
-            }
-        }
-    }
 }

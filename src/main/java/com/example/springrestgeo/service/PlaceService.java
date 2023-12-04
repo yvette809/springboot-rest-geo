@@ -1,32 +1,50 @@
 package com.example.springrestgeo.service;
 
 
+import com.example.springrestgeo.dto.PlaceDto;
 import com.example.springrestgeo.entity.Category;
+import com.example.springrestgeo.entity.Coordinates;
 import com.example.springrestgeo.entity.Place;
-import com.example.springrestgeo.entity.User;
 import com.example.springrestgeo.exceptions.ResourceNotFoundException;
 import com.example.springrestgeo.repository.CategoryRepository;
 import com.example.springrestgeo.repository.PlaceRepository;
+import org.geolatte.geom.G2D;
+import org.geolatte.geom.Geometries;
+import org.geolatte.geom.Point;
+import org.geolatte.geom.builder.DSL;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Polygon;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.geolatte.geom.builder.DSL.g;
+import static org.geolatte.geom.crs.CoordinateReferenceSystems.WGS84;
 
 @Service
 public class PlaceService {
-    private final PlaceRepository placeRepository;
-    private final CategoryRepository categoryRepository;
+     PlaceRepository placeRepository;
+     CategoryRepository categoryRepository;
+
+
+    // Define a logger for the PlaceService class
+    private static final Logger logger = LoggerFactory.getLogger(PlaceService.class);
+
 
     @Autowired
     public PlaceService(PlaceRepository placeRepository, CategoryRepository categoryRepository) {
         this.placeRepository = placeRepository;
         this.categoryRepository = categoryRepository;
+
     }
 
     public List<Place> getAllPublicPlacesByFilter() {
@@ -50,31 +68,48 @@ public class PlaceService {
     }
 
     public List<Place> getALLPlacesForLoggedInUser(String userId) {
-        return placeRepository.findAllByUserUserId(userId);
+        return placeRepository.findAllByUserId(userId);
     }
 
-    public Place createPlace(Place place, Integer categoryId) {
+    public Place createPlace(PlaceDto place) {
+
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (!auth.isAuthenticated()) {
             throw new RuntimeException("User must be logged in to create a place");
         }
-        User currentUser = (User) auth.getPrincipal();
 
-        // create a new place entity
-        Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + categoryId, categoryId));
+        // Extract user ID from the authenticated principal
+        String userName  =  auth.getName();
+
+        if (userName== null) {
+            throw new ResourceNotFoundException("User not found with name: " + userName);
+        }
+
+        // Create a new place entity
+        Optional<Category> category = categoryRepository.findById(place.categoryId());
+        if(category.isEmpty()){
+            throw new RuntimeException("No such category exists");
+        }
+
+        var geo = Geometries.mkPoint(new G2D(place.coordinate().lon(), place.coordinate().lat()), WGS84);
+
+
         Place newPlace = new Place();
-        newPlace.setName(place.getName());
-        newPlace.setDescription(place.getDescription());
-        newPlace.setVisible(place.getVisible());
-        newPlace.setUser(currentUser);
-        newPlace.setCategory(category);
-        newPlace.setDateCreated(LocalDateTime.now()); // Set the current date/time
+        newPlace.setName(place.name());
+        newPlace.setDescription(place.description());
+        newPlace.setVisible(place.visible());
+        newPlace.setUserId(userName);
+        newPlace.setCategory(category.get());
 
-        // Assuming placeRequest contains the coordinates
-        newPlace.setCoordinate(place.getCoordinate());
-        return placeRepository.save(newPlace);
+        newPlace.setCoordinate(geo);
+
+        Place savedPlace = placeRepository.save(newPlace);
+
+        logger.info("Place created successfully. Place ID: {}, Name: {}", savedPlace.getId(), savedPlace.getName());
+
+        return savedPlace;
     }
+
 
     public Place updatePlace(Integer placeId, Place place) {
         // Check if user is logged in
@@ -84,9 +119,9 @@ public class PlaceService {
 
         // Check if place exists and belongs to the logged-in user
         Place existingPlace = placeRepository.findById(placeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Place not found with ID: " + placeId, placeId));
+                .orElseThrow(() -> new ResourceNotFoundException("Place not found with ID: " + placeId));
 
-        if (!existingPlace.getUser().getUserId().equals(getCurrentUserId())) {
+        if (!existingPlace.getUserId().equals(getCurrentUserId())) {
             throw new RuntimeException("Place does not belong to loggedInUser");
         }
 
@@ -100,9 +135,9 @@ public class PlaceService {
     }
 
     private String getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.isAuthenticated()) {
-            UserDetails currentUser = (UserDetails) authentication.getPrincipal();
+        Authentication auth= SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated()) {
+            UserDetails currentUser = (UserDetails) auth.getPrincipal();
             return currentUser.getUsername();
         } else {
             return null;
@@ -117,13 +152,37 @@ public class PlaceService {
 
         // check if place was created by loggedIn user
         Place place = placeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Place not found with ID: " + id, id));
+                .orElseThrow(() -> new ResourceNotFoundException("Place not found with ID: " + id));
 
-        if (!place.getUser().getUserId().equals(getCurrentUserId())) {
+        if (!place.getUserId().equals(getCurrentUserId())) {
             throw new RuntimeException("Place does not belong to loggedInUser");
         }
 
         placeRepository.delete(place);
         System.out.println("Place with id:" + id + " deleted");
+    }
+
+    // find location within a distance
+    public List<Place> findAround(double lat, double lon, double distance) {
+        Point<G2D> location = DSL.point(WGS84, g(lon, lat));
+        return placeRepository.filterOnDistance(location, distance);
+    }
+
+    public List<Place> findWithinPolygon(Coordinates[] coordinates) {
+        if (coordinates == null || coordinates.length != 4) {
+            throw new IllegalArgumentException("For filtering within an area, four coordinate points are required.");
+        }
+
+        GeometryFactory geometryFactory = new GeometryFactory();
+        Coordinate[] polygonCoordinates = new Coordinate[coordinates.length + 1];
+        for (int i = 0; i < coordinates.length; i++) {
+            polygonCoordinates[i] = new Coordinate(coordinates[i].lon(), coordinates[i].lat());
+        }
+        polygonCoordinates[coordinates.length] = polygonCoordinates[0];
+        Polygon polygon = geometryFactory.createPolygon(polygonCoordinates);
+
+        polygon.setSRID(4326);
+
+        return placeRepository.filterWithinPolygon(String.valueOf(polygon));
     }
 }

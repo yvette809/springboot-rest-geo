@@ -1,5 +1,6 @@
 package com.example.springrestgeo.controller;
 
+import com.example.springrestgeo.dto.PlaceDto;
 import com.example.springrestgeo.entity.Place;
 import com.example.springrestgeo.service.PlaceService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,7 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.nio.file.AccessDeniedException;
 import java.util.List;
 
@@ -61,10 +64,16 @@ public class PlaceController {
     }
 
     @PostMapping("/places")
-    public ResponseEntity<Place> createAPlace(Place place, Integer categoryId){
+    public ResponseEntity<Place> createAPlace(PlaceDto place){
 
-        Place newPlace = placeService.createPlace(place, categoryId);
-        return ResponseEntity.status(201).build();
+        Place newPlace = placeService.createPlace(place);
+
+        URI locationURI = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .buildAndExpand(newPlace.getId())
+                .toUri();
+
+        return ResponseEntity.created(locationURI).body(newPlace);
     }
 
     @PutMapping("/places")

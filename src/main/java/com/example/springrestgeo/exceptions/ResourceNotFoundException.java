@@ -1,15 +1,16 @@
 package com.example.springrestgeo.exceptions;
 
+import java.io.Serial;
+
 public class ResourceNotFoundException extends RuntimeException {
-    private final Integer id;
+
+    @Serial
+    private static final Integer serialVersionUID =1;
 
 
-    public ResourceNotFoundException(String message,Integer id) {
+    public ResourceNotFoundException(String message) {
         super(message);
-        this.id = id;
+
     }
 
-    public Integer getId() {
-        return id;
-    }
 }

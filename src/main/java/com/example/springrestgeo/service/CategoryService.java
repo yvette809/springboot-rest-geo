@@ -1,6 +1,7 @@
 package com.example.springrestgeo.service;
 
 import com.example.springrestgeo.entity.Category;
+import com.example.springrestgeo.entity.Place;
 import com.example.springrestgeo.exceptions.ResourceNotFoundException;
 import com.example.springrestgeo.repository.CategoryRepository;
 import jakarta.transaction.Transactional;
@@ -25,10 +26,18 @@ public class CategoryService {
     }
 
     public Category getCategoryById(Integer id) {
-        return categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found with ID: " + id, id));
-    }
+        Optional<Category> optionalCategory = categoryRepository.findById(id);
 
+        Category category = optionalCategory.orElseThrow(() ->
+                new ResourceNotFoundException("Category not found with ID: " + id));
+
+        // Trigger lazy loading of places
+        List<Place> places = category.getPlaces().stream().toList();
+
+        category.setPlaces(places);
+
+        return category;
+    }
     @Transactional
     public void saveCategory(Category category) {
         if (categoryRepository.existsByName(category.getName())) {
@@ -38,4 +47,6 @@ public class CategoryService {
         // Continue with saving the new category if it doesn't exist
         categoryRepository.save(category);
     }
+
+
 }
