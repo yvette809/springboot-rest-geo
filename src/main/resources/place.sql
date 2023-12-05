@@ -23,6 +23,18 @@ INSERT INTO category ( name, symbol, description) VALUES
                                                       ('mountain', '🏔️', 'A little adventure is intriguing');
 
 # create places table
+CREATE TABLE place (
+                       id INT AUTO_INCREMENT PRIMARY KEY,
+                       name VARCHAR(50) NOT NULL,
+                       category_id INT NOT NULL,
+                       user_id VARCHAR(50) NOT NULL,
+                       visible BOOLEAN NOT NULL DEFAULT true,
+                       date_created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                       date_modified DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                       description VARCHAR(255) NOT NULL,
+                       coordinate POINT NOT NULL SRID 4326
+);
+
 
 INSERT INTO place (name, category_id, user_id, visible, date_created, date_modified, description, coordinate)
 VALUES
@@ -37,7 +49,7 @@ VALUES
 
 
 
-# table for users
+
 
 
 

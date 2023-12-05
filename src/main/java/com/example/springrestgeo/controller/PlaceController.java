@@ -76,7 +76,7 @@ public class PlaceController {
     }
 
     @PostMapping()
-    public ResponseEntity<Place> createAPlace(PlaceDto place){
+    public ResponseEntity<Place> createAPlace( PlaceDto place){
 
         Place newPlace = placeService.createPlace(place);
 

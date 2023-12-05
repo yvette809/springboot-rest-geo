@@ -1,7 +1,6 @@
 package com.example.springrestgeo.entity;
 
 import com.example.springrestgeo.utils.Point2DSerializer;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
@@ -42,15 +41,25 @@ public class Place {
     @JsonSerialize(using = Point2DSerializer.class)
     private Point<G2D> coordinate;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name="category_id")
     private Category category;
 
     // constructors
     public Place(){}
 
+    public Place(String name, String userId, String description, Boolean visible, LocalDateTime dateCreated, LocalDateTime dateModified, Point<G2D> coordinate, Category category) {
+        this.name = name;
+        this.userId = userId;
+        this.description = description;
+        this.visible = visible;
+        this.dateCreated = dateCreated;
+        this.dateModified = dateModified;
+        this.coordinate = coordinate;
+        this.category = category;
+    }
 
-    // getters and setters
+// getters and setters
 
     public int getId() {
         return id;
@@ -145,21 +154,7 @@ public class Place {
     //equals
 
 
-    @Override
-    public final boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null) return false;
-        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
-        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
-        if (thisEffectiveClass != oEffectiveClass) return false;
-        Place place= (Place) o;
-        return false;
-    }
 
-    @Override
-    public final int hashCode() {
-        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
-    }
 
 
 

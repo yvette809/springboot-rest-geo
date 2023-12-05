@@ -8,7 +8,6 @@ import com.example.springrestgeo.entity.Place;
 import com.example.springrestgeo.exceptions.ResourceNotFoundException;
 import com.example.springrestgeo.repository.CategoryRepository;
 import com.example.springrestgeo.repository.PlaceRepository;
-import jakarta.transaction.Transactional;
 import org.geolatte.geom.G2D;
 import org.geolatte.geom.Geometries;
 import org.geolatte.geom.Point;
@@ -48,11 +47,11 @@ public class PlaceService {
 
     }
 
-    public List<Place> getAllPublicPlacesByFilter() {
+   /* public List<Place> getAllPublicPlacesByFilter() {
         return placeRepository.findAll().stream()
                 .filter(Place::getVisible)
                 .collect(Collectors.toList());
-    }
+    }*/
 
     public List<Place> getAllPublicPlaces() {
         return placeRepository.findAllByVisible(true);
@@ -81,10 +80,12 @@ public class PlaceService {
         }
 
         // Create a new place entity
+        // Inside a method or a block
+        logger.debug("Entering the method...");
       var category = categoryRepository.findById(place.categoryId());
-      logger.info("Category ID from PlaceDto" + place.categoryId());
-        logger.info("category:" + category);
+        logger.debug("Category ID from PlaceDto: {}", place.categoryId());
 
+        logger.debug("Result of findById: {}", category.orElse(null));
         if(category.isEmpty()){
             throw new IllegalArgumentException("No such category exists");
         }
@@ -95,8 +96,9 @@ public class PlaceService {
         newPlace.setDescription(place.description());
         newPlace.setVisible(place.visible());
         newPlace.setUserId(userName);
-        newPlace.setCategory(category.get());
+       // newPlace.setCategory(category.get());
         newPlace.setCoordinate(geo);
+
 
         return placeRepository.save(newPlace);
     }
@@ -137,7 +139,6 @@ public class PlaceService {
     }
 
     public void deletePlace(Integer id) {
-        // user must be logged in or be an admin
         // Check if user is logged in
         String currentUserId = getCurrentUserId();
         if (currentUserId == null) {
@@ -145,9 +146,11 @@ public class PlaceService {
         }
 
 
-        // check if place was created by loggedIn user
+        // Check if place is available
         Place place = placeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Place not found with ID: " + id));
+
+        //check if place was created by loggedIn user
 
         if (!place.getUserId().equals(getCurrentUserId())) {
             throw new RuntimeException("Place does not belong to loggedInUser");
