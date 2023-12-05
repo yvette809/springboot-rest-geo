@@ -24,28 +24,17 @@ INSERT INTO category ( name, symbol, description) VALUES
 
 # create places table
 
-CREATE TABLE place (
-                       id INT AUTO_INCREMENT ,
-                       name VARCHAR(50) NOT NULL,
-                       category_id INT NOT NULL,
-                       user_id VARCHAR(50) NOT NULL,
-                       visible BOOLEAN NOT NULL DEFAULT true,
-                       date_created DATETIME,
-                       date_modified DATETIME,
-                       description VARCHAR(255) NOT NULL,
-                       coordinate POINT NOT NULL,
-                       PRIMARY KEY (id),
-                       FOREIGN KEY (category_id) REFERENCES category(id)
+INSERT INTO place (name, category_id, user_id, visible, date_created, date_modified, description, coordinate)
+VALUES
+    ('Place 1', 1, 'yvette', true, NOW(), NOW(), 'Description for Place 1', ST_GeomFromText('POINT(20.456 10.123)', 4326)),
+    ('Place 2', 2, 'admin', false, NOW(), NOW(), 'Description for Place 2', ST_GeomFromText('POINT(25.789 15.678)', 4326)),
+    ('Place 3', 1, 'user', true, NOW(), NOW(), 'Description for Place 3', ST_GeomFromText('POINT(30.567 12.345)', 4326)),
+    ('Place 4', 3, 'yvette', true, NOW(), NOW(), 'Description for Place 4', ST_GeomFromText('POINT(18.234 22.789)', 4326)),
+    ('Place 5', 2, 'yvette', false, NOW(), NOW(), 'Description for Place 5', ST_GeomFromText('POINT(16.789 25.123)', 4326));
 
-) ENGINE=InnoDB;
 
-INSERT INTO place (name, category_id, user_id, visible,date_created, date_modified, description, coordinate) VALUES
-                                                                                                                 ('Place 1', 1, 'yvette', true,  NOW(), NOW(), 'Description for Place 1', POINT(10.123, 20.456)),
-                                                                                                                 ('Place 2', 2, 'admin', false,NOW(), NOW(), 'Description for Place 2', POINT(30.789, 40.012)),
-                                                                                                                 ('Place 3', 3, 'user', false, NOW(), NOW(), 'Description for Place 3', POINT(50.345, 60.678)),
-                                                                                                                 ('Place 4', 4, 'yvette', true, NOW(), NOW(), 'Description for Place 4', POINT(50.345, 60.678));
 
-SELECT id, name, ST_AsText(coordinate) AS coordinates_text FROM place;
+
 
 
 # table for users

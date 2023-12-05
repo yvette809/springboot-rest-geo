@@ -8,6 +8,7 @@ import com.example.springrestgeo.entity.Place;
 import com.example.springrestgeo.exceptions.ResourceNotFoundException;
 import com.example.springrestgeo.repository.CategoryRepository;
 import com.example.springrestgeo.repository.PlaceRepository;
+import jakarta.transaction.Transactional;
 import org.geolatte.geom.G2D;
 import org.geolatte.geom.Geometries;
 import org.geolatte.geom.Point;
@@ -71,49 +72,40 @@ public class PlaceService {
         return placeRepository.findAllByUserId(userId);
     }
 
-    public Place createPlace(PlaceDto place) {
 
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (!auth.isAuthenticated()) {
+    public Place createPlace(PlaceDto place) {
+        String userName = getCurrentUserId();
+
+        if (userName== null) {
             throw new RuntimeException("User must be logged in to create a place");
         }
 
-        // Extract user ID from the authenticated principal
-        String userName  =  auth.getName();
-
-        if (userName== null) {
-            throw new ResourceNotFoundException("User not found with name: " + userName);
-        }
-
         // Create a new place entity
-        Optional<Category> category = categoryRepository.findById(place.categoryId());
+      var category = categoryRepository.findById(place.categoryId());
+      logger.info("Category ID from PlaceDto" + place.categoryId());
+        logger.info("category:" + category);
+
         if(category.isEmpty()){
-            throw new RuntimeException("No such category exists");
+            throw new IllegalArgumentException("No such category exists");
         }
 
-        var geo = Geometries.mkPoint(new G2D(place.coordinate().lon(), place.coordinate().lat()), WGS84);
-
-
+        var geo = Geometries.mkPoint(new G2D(place.coordinate().getLat(), place.coordinate().getLng()), WGS84);
         Place newPlace = new Place();
         newPlace.setName(place.name());
         newPlace.setDescription(place.description());
         newPlace.setVisible(place.visible());
         newPlace.setUserId(userName);
         newPlace.setCategory(category.get());
-
         newPlace.setCoordinate(geo);
 
-        Place savedPlace = placeRepository.save(newPlace);
-
-        logger.info("Place created successfully. Place ID: {}, Name: {}", savedPlace.getId(), savedPlace.getName());
-
-        return savedPlace;
+        return placeRepository.save(newPlace);
     }
 
 
     public Place updatePlace(Integer placeId, PlaceDto place) {
         // Check if user is logged in
-        if (!SecurityContextHolder.getContext().getAuthentication().isAuthenticated()) {
+        String currentUserId = getCurrentUserId();
+        if (currentUserId == null) {
             throw new RuntimeException("User must be logged in to update a place");
         }
 
@@ -146,9 +138,12 @@ public class PlaceService {
 
     public void deletePlace(Integer id) {
         // user must be logged in or be an admin
-        if (!SecurityContextHolder.getContext().getAuthentication().isAuthenticated()) {
-            throw new RuntimeException("User must be logged in to delete a place");
+        // Check if user is logged in
+        String currentUserId = getCurrentUserId();
+        if (currentUserId == null) {
+            throw new RuntimeException("User must be logged in to update a place");
         }
+
 
         // check if place was created by loggedIn user
         Place place = placeRepository.findById(id)
@@ -176,7 +171,7 @@ public class PlaceService {
         GeometryFactory geometryFactory = new GeometryFactory();
         Coordinate[] polygonCoordinates = new Coordinate[coordinates.length + 1];
         for (int i = 0; i < coordinates.length; i++) {
-            polygonCoordinates[i] = new Coordinate(coordinates[i].lon(), coordinates[i].lat());
+            polygonCoordinates[i] = new Coordinate(coordinates[i].getLng(), coordinates[i].getLat());
         }
         polygonCoordinates[coordinates.length] = polygonCoordinates[0];
         Polygon polygon = geometryFactory.createPolygon(polygonCoordinates);

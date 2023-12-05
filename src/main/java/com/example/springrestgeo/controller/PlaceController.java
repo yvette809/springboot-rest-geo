@@ -4,6 +4,7 @@ import com.example.springrestgeo.dto.PlaceDto;
 import com.example.springrestgeo.entity.Coordinates;
 import com.example.springrestgeo.entity.Place;
 import com.example.springrestgeo.service.PlaceService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,8 +50,6 @@ public class PlaceController {
 
         if (dist.isPresent() && lat.isPresent() && lon.isPresent()) {
             return ResponseEntity.ok().body(placeService.findAround(lat.get(), lon.get(), dist.get()));
-        } else if (coordinates.isPresent()) {
-            return ResponseEntity.ok().body(placeService.findWithinPolygon(coordinates.get()));
         }
         return null;
     }
